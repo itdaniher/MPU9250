@@ -8,7 +8,7 @@ import os
 
 class BMP280:
 
-        def __init__(self, i2c_bus = 0):
+        def __init__(self, i2c_bus = 0, address=0x77):
             self.bus = 0
             self.b1 = []
             self.dig_T1 = 0
@@ -25,15 +25,12 @@ class BMP280:
             self.dig_P7 = 0
             self.dig_P8 = 0
             self.dig_P9 = 0
+            self.address = address
             #Get I2C bus
             self.bus = smbus2.SMBus(i2c_bus)
             #BMP280 address, 0x76(118)
             #Read data back from 0x88(136), 24 bytes
-            try:
-                self.b1 = self.bus.read_i2c_block_data(0x76, 0x88, 24)
-            except IOError:
-                subprocess.call(['i2cdetect', '-y', '1'])
-                flag = 1     #optional flag to signal your code to resend or something
+            self.b1 = self.bus.read_i2c_block_data(address, 0x88, 24)
             self.temperature()
 
         def temperature(self):
@@ -50,7 +47,7 @@ class BMP280:
             # Read data back from 0xF7(247), 8 bytes
             # Pressure MSB, Pressure LSB, Pressure xLSB, Temperature MSB, Temperature LSB
             # Temperature xLSB, Humidity MSB, Humidity LSB
-            self.data = self.bus.read_i2c_block_data(0x76, 0xF7, 8)
+            self.data = self.bus.read_i2c_block_data(self.address, 0xF7, 8)
             # Convert temperature data to 19-bits
             self.adc_t = ((self.data[3] * 65536) + (self.data[4] * 256) + (self.data[5] & 0xF0)) / 16
 
@@ -67,11 +64,11 @@ class BMP280:
             # Select Control measurement register, 0xF4(244)
             #		0x27(39)	Pressure and Temperature Oversampling rate = 1
             #					Normal mode
-            self.bus.write_byte_data(0x76, 0xF4, 0x27)
+            self.bus.write_byte_data(self.address, 0xF4, 0x27)
             # BMP280 address, 0x76(118)
             # Select Configuration register, 0xF5(245)
             #		0xA0(00)	Stand_by time = 1000 ms
-            self.bus.write_byte_data(0x76, 0xF5, 0xA0)
+            self.bus.write_byte_data(self.address, 0xF5, 0xA0)
 
             time.sleep(0.5)
 
@@ -109,7 +106,7 @@ class BMP280:
             # Read data back from 0xF7(247), 8 bytes
             # Pressure MSB, Pressure LSB, Pressure xLSB, Temperature MSB, Temperature LSB
             # Temperature xLSB, Humidity MSB, Humidity LSB
-            self.data = self.bus.read_i2c_block_data(0x76, 0xF7, 8)
+            self.data = self.bus.read_i2c_block_data(self.address, 0xF7, 8)
 
             # Convert pressure and temperature data to 19-bits
             self.adc_p = ((self.data[0] * 65536) + (self.data[1] * 256) + (self.data[2] & 0xF0)) / 16
